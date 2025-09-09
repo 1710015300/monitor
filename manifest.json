@@ -2,14 +2,17 @@
   "name": "Status de Conexão",
   "short_name": "Status",
   "description": "Verificador de status de conexão e serviços.",
-  "start_url": ".",
+  "start_url": "/monitor/",
+  "scope": "/monitor/",
   "id": "/monitor/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#111827",
   "theme_color": "#111827",
+  "lang": "pt-BR",
   "categories": [
-    "utilities"
+    "utilities",
+    "productivity"
   ],
   "related_applications": [
     {
