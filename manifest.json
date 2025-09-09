@@ -11,6 +11,12 @@
   "categories": [
     "utilities"
   ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "br.com.irapuru.status"
+    }
+  ],
   "icons": [
     {
       "src": "https://placehold.co/192x192/111827/ffffff?text=Status",
@@ -38,3 +44,4 @@
     }
   ]
 }
+
