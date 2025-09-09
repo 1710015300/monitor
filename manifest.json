@@ -2,10 +2,15 @@
   "name": "Status de Conexão",
   "short_name": "Status",
   "description": "Verificador de status de conexão e serviços.",
-  "start_url": "./status.html",
+  "start_url": ".",
+  "id": "/monitor/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#111827",
   "theme_color": "#111827",
+  "categories": [
+    "utilities"
+  ],
   "icons": [
     {
       "src": "https://placehold.co/192x192/111827/ffffff?text=Status",
@@ -16,6 +21,20 @@
       "src": "https://placehold.co/512x512/111827/ffffff?text=Status",
       "type": "image/png",
       "sizes": "512x512"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://placehold.co/1080x1920/111827/ffffff?text=App+Screenshot+1",
+      "type": "image/png",
+      "sizes": "1080x1920",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://placehold.co/1080x1920/111827/ffffff?text=App+Screenshot+2",
+      "type": "image/png",
+      "sizes": "1080x1920",
+      "form_factor": "narrow"
     }
   ]
 }
