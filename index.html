@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Status de Conexão</title>
+    <!-- Link para o Manifesto do PWA -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Cor do tema para a barra de status do navegador -->
+    <meta name="theme-color" content="#111827">
+
     <script src="https://cdn-tailwindcss.vercel.app/"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -29,7 +34,7 @@
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-track { background: #1f2337; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         
@@ -84,7 +89,7 @@
                     </svg>
                 </button>
                 <div id="options-menu" class="hidden absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-20">
-                    <a href="#" id="show-add-service-btn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Novo Monitoramento</a>
+                    <a href="#" id="show-quick-test-btn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Teste Rápido</a>
                     <a href="#" id="show-history-btn" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Histórico</a>
                 </div>
             </div>
@@ -96,22 +101,20 @@
         </main>
     </div>
 
-    <!-- Modal: Novo Monitoramento -->
-    <div id="add-service-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden opacity-0">
+    <!-- Modal: Teste Rápido -->
+    <div id="quick-test-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden opacity-0">
         <div class="modal-content bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform -translate-y-10">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold">Monitorar Novo Serviço</h2>
+                <h2 class="text-xl font-semibold">Teste Rápido de URL</h2>
                 <button class="close-modal-btn text-gray-500 hover:text-white text-2xl">&times;</button>
             </div>
-            <form id="add-service-form">
-                <div class="space-y-4">
-                    <input type="text" id="service-name" placeholder="Nome do Serviço (ex: Site Interno)" class="w-full bg-gray-700 text-white placeholder-gray-400 rounded-md px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" id="service-url" placeholder="URL (ex: irapuru.com.br)" class="w-full bg-gray-700 text-white placeholder-gray-400 rounded-md px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div class="mt-6 flex justify-end">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300">Adicionar</button>
+            <form id="quick-test-form">
+                <div class="flex items-center gap-3">
+                    <input type="text" id="quick-test-url" placeholder="URL (ex: irapuru.com.br)" class="flex-grow bg-gray-700 text-white placeholder-gray-400 rounded-md px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300">OK</button>
                 </div>
             </form>
+             <div id="quick-test-result-container" class="mt-4"></div>
         </div>
     </div>
     
@@ -143,24 +146,22 @@
             const optionsMenu = document.getElementById('options-menu');
             
             // --- Elementos dos Modais ---
-            const addServiceModal = document.getElementById('add-service-modal');
+            const quickTestModal = document.getElementById('quick-test-modal');
             const historyModal = document.getElementById('history-modal');
-            const showAddServiceBtn = document.getElementById('show-add-service-btn');
+            const showQuickTestBtn = document.getElementById('show-quick-test-btn');
             const showHistoryBtn = document.getElementById('show-history-btn');
-            const addServiceForm = document.getElementById('add-service-form');
-            const serviceNameInput = document.getElementById('service-name');
-            const serviceUrlInput = document.getElementById('service-url');
+            const quickTestForm = document.getElementById('quick-test-form');
+            const quickTestUrlInput = document.getElementById('quick-test-url');
+            const quickTestResultContainer = document.getElementById('quick-test-result-container');
 
             const CHECK_INTERVAL = 30000;
 
             // --- ESTADO DA APLICAÇÃO ---
             const webAccessService = { name: 'Acesso Web', type: 'web-access', urls: ['https://8.8.8.8', 'https://1.1.1.1'], status: 'checking', showTick: false };
-            let userServices = (JSON.parse(localStorage.getItem('userServices')) || []).map(s => ({...s, showTick: false}));
-            let services = [webAccessService, ...userServices];
+            let services = [webAccessService]; // Lista de serviços fixos
             let history = JSON.parse(localStorage.getItem('statusHistory')) || [];
 
             // --- FUNÇÕES DE PERSISTÊNCIA ---
-            const saveUserServices = () => localStorage.setItem('userServices', JSON.stringify(services.filter(s => s.type !== 'web-access')));
             const saveHistory = () => localStorage.setItem('statusHistory', JSON.stringify(history.filter(e => e.timestamp > Date.now() - 86400000)));
             
             const addHistoryEvent = (serviceName, status) => {
@@ -183,16 +184,10 @@
                     const serviceDiv = document.createElement('div');
                     serviceDiv.className = 'service-item bg-gray-800 p-4 rounded-lg shadow-md flex items-center justify-between';
                     
-                    let subText = '';
+                    let subText = service.status === 'online' ? 'Você está conectado à Internet.' : (service.status === 'offline' ? 'Você parece estar sem conexão.' : 'Verificando conexão...');
                     let statusDisplay = service.showTick ? statusText + tickSVG : statusText;
-
-                    if (service.type === 'web-access') {
-                        subText = service.status === 'online' ? 'Você está conectado à Internet.' : (service.status === 'offline' ? 'Você parece estar sem conexão.' : 'Verificando conexão...');
-                        serviceDiv.innerHTML = `<div class="flex items-center"><span class="status-dot ${statusClass} mr-3"></span><div><p class="font-semibold text-gray-100">${service.name}</p><p class="text-sm text-gray-400">${subText}</p></div></div><span class="font-medium text-sm text-gray-300 flex items-center">${statusDisplay}</span>`;
-                    } else {
-                        subText = service.status === 'online' ? `"${service.name}" está acessível.` : (service.status === 'offline' ? `"${service.name}" parece estar offline.` : `Verificando "${service.name}"...`);
-                        serviceDiv.innerHTML = `<div class="flex items-center"><span class="status-dot ${statusClass} mr-3"></span><div><p class="font-semibold text-gray-100">${service.name}</p><p class="text-sm text-gray-400">${subText}</p></div></div><div class="flex items-center gap-4"><span class="font-medium text-sm text-gray-300 flex items-center">${statusDisplay}</span><button data-index="${index}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors duration-200 text-lg">&times;</button></div>`;
-                    }
+                    
+                    serviceDiv.innerHTML = `<div class="flex items-center"><span class="status-dot ${statusClass} mr-3"></span><div><p class="font-semibold text-gray-100">${service.name}</p><p class="text-sm text-gray-400">${subText}</p></div></div><span class="font-medium text-sm text-gray-300 flex items-center">${statusDisplay}</span>`;
                     servicesContainer.appendChild(serviceDiv);
                 });
             };
@@ -221,11 +216,6 @@
                     });
                     const results = await Promise.all(service.urls.map(checkSingleUrl));
                     if (results.some(isOnline => isOnline)) newStatus = 'online';
-                } else {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000);
-                    try { await fetch(`${service.url}?t=${Date.now()}`, { mode: 'no-cors', signal: controller.signal }); newStatus = 'online'; } 
-                    catch (error) { newStatus = 'offline'; } finally { clearTimeout(timeoutId); }
                 }
                 if (currentStatus !== newStatus) {
                     services[index].status = newStatus;
@@ -278,45 +268,69 @@
                     setTimeout(() => modal.classList.add('hidden'), 300);
                 }
             };
+            
+            const resetQuickTestModal = () => {
+                quickTestResultContainer.innerHTML = '';
+                quickTestForm.reset();
+            };
 
             optionsBtn.addEventListener('click', (e) => { e.stopPropagation(); optionsMenu.classList.toggle('hidden'); });
             document.addEventListener('click', () => optionsMenu.classList.add('hidden'));
-            showAddServiceBtn.addEventListener('click', (e) => { e.preventDefault(); toggleModal(addServiceModal, true); });
+            showQuickTestBtn.addEventListener('click', (e) => { e.preventDefault(); toggleModal(quickTestModal, true); });
             showHistoryBtn.addEventListener('click', (e) => { e.preventDefault(); toggleModal(historyModal, true); });
+            
             document.querySelectorAll('.modal-backdrop, .close-modal-btn').forEach(el => {
                 el.addEventListener('click', (e) => {
                     if (e.target === el) {
-                        toggleModal(addServiceModal, false);
+                        toggleModal(quickTestModal, false);
                         toggleModal(historyModal, false);
+                        resetQuickTestModal();
                     }
                 });
             });
 
             // --- EVENT LISTENERS ---
-            addServiceForm.addEventListener('submit', (e) => {
+            quickTestForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const name = serviceNameInput.value.trim();
-                let url = serviceUrlInput.value.trim();
-                if (name && url) {
-                    if (!url.startsWith('http')) url = 'https://' + url;
-                    const newService = { name, url, status: 'checking', showTick: false };
-                    services.push(newService);
-                    addServiceForm.reset();
-                    saveUserServices();
-                    renderServices();
-                    checkStatus(newService, services.length - 1);
-                    toggleModal(addServiceModal, false);
+                let url = quickTestUrlInput.value.trim();
+                if (!url) return;
+                
+                if (!url.startsWith('http')) {
+                    url = 'https://' + url;
                 }
+
+                quickTestResultContainer.innerHTML = `<p class="text-center text-gray-400">Testando...</p>`;
+                
+                let status = 'offline';
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                try {
+                    await fetch(`${url}?t=${Date.now()}`, { mode: 'no-cors', signal: controller.signal });
+                    status = 'online';
+                } catch (error) {
+                    status = 'offline';
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+                
+                const statusClass = `status-${status}`;
+                const statusText = status === 'online' ? 'Online' : 'Offline';
+                const subText = status === 'online' ? `O site está acessível.` : `Não foi possível conectar.`;
+
+                quickTestResultContainer.innerHTML = `
+                    <div class="bg-gray-700 p-4 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="status-dot ${statusClass} mr-3"></span>
+                            <div>
+                                <p class="font-semibold text-gray-100 break-all">${quickTestUrlInput.value}</p>
+                                <p class="text-sm text-gray-400">${subText}</p>
+                            </div>
+                        </div>
+                        <span class="font-medium text-sm text-gray-300">${statusText}</span>
+                    </div>
+                `;
             });
 
-            servicesContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const index = e.target.getAttribute('data-index');
-                    services.splice(index, 1);
-                    saveUserServices();
-                    renderServices();
-                }
-            });
             refreshBtn.addEventListener('click', () => runAllChecks(true));
 
             // --- INICIALIZAÇÃO ---
@@ -326,6 +340,18 @@
             setInterval(runAllChecks, CHECK_INTERVAL);
         });
     </script>
+    
+    <!-- Script para registrar o Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then(registration => {
+            console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+          }, err => {
+            console.log('Registro do ServiceWorker falhou: ', err);
+          });
+        });
+      }
+    </script>
 </body>
 </html>
-
