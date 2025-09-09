@@ -1,0 +1,21 @@
+{
+  "name": "Status de Conexão",
+  "short_name": "Status",
+  "description": "Verificador de status de conexão e serviços.",
+  "start_url": "./status.html",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/111827/ffffff?text=Status",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://placehold.co/512x512/111827/ffffff?text=Status",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
